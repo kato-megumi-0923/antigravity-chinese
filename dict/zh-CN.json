@@ -1,5 +1,13 @@
 {
   "exact": {
+    "Build me a web app": "帮我创建一个网页应用",
+    "Add a Gemini feature to my app": "为我的应用添加 Gemini 功能",
+    "Bring over my setup from other Agentic Developer Tools": "从其他智能体开发工具迁移我的配置",
+    "Low": "低",
+    "Medium": "中",
+    "High": "高",
+    "Extra High": "极高",
+    "For most deep reasoning and complex problems": "适合大多数深度推理和复杂问题",
     ", or": "，或",
     ", or ": "，或 ",
     "? This removes it from your config directory.": "吗？这将从您的配置目录中将其移除。",
@@ -2131,6 +2139,7 @@
     "Wednesday": "周三",
     "Weekdays": "工作日",
     "Weekends": "周末",
+    "Weekly limit,": "周限额，",
     "Weekly": "每周",
     "Weekly Limit Remaining": "每周剩余额度",
     "Welcome back!": "欢迎回来！",
@@ -4697,6 +4706,10 @@
     "Failed to refresh credentials": "刷新凭据失败"
   },
   "patterns": [
+    {
+      "regex": "^Weekly limit,\\s*(.+)$",
+      "replacement": "周限额，$1"
+    },
     {
       "regex": "^Select Sidebar Item ([1-9])$",
       "replacement": "选择侧栏第 $1 项"

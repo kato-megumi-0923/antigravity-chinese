@@ -372,7 +372,7 @@
     if (IGNORED_TAGS[el.tagName]) return true;
     if (el.isContentEditable || el.getAttribute('contenteditable') === '' ||
         el.getAttribute('contenteditable') === 'true' || el.getAttribute('contenteditable') === 'plaintext-only') return true;
-    if (isModelSelectorBoundary(el)) return true;
+    // Model selector labels and reasoning effort options are interface text.
 
     var testId = el.getAttribute('data-testid');
     if ((CONTENT_TEST_IDS[testId] === 1 && !isCustomizationBreadcrumb(el)) || el.hasAttribute('data-ag-localization-skip') ||

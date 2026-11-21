@@ -1,5 +1,9 @@
 [
   {
+    "regex": "^Weekly limit,\\s*(.+)$",
+    "replacement": "周限额，$1"
+  },
+  {
     "regex": "^Select Sidebar Item ([1-9])$",
     "replacement": "选择侧栏第 $1 项"
   },
