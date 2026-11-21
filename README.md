@@ -1,25 +1,20 @@
-# Google Antigravity 中文本地化工具
+# Antigravity 中文汉化维护版
 
-<p align="center">
-  <a href="https://github.com/yiheng8023/antigravity-chinese/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/yiheng8023/antigravity-chinese/ci.yml?branch=main&amp;label=CI&amp;logo=github" alt="CI 状态"></a>
-  <a href="https://github.com/yiheng8023/antigravity-chinese/releases/latest"><img src="https://img.shields.io/github/v/release/yiheng8023/antigravity-chinese?color=blue&amp;label=Release" alt="最新发行版"></a>
-  <a href="https://github.com/yiheng8023/antigravity-chinese/releases"><img src="https://img.shields.io/github/downloads/yiheng8023/antigravity-chinese/total?color=3388ff&amp;logo=github&amp;label=Asset%20downloads" alt="发行版附件下载量"></a>
-  <a href="https://github.com/yiheng8023/antigravity-chinese/stargazers"><img src="https://img.shields.io/github/stars/yiheng8023/antigravity-chinese?logo=github&amp;color=ffaa00" alt="GitHub 星标数"></a>
-  <a href="https://github.com/yiheng8023/antigravity-chinese/network/members"><img src="https://img.shields.io/github/forks/yiheng8023/antigravity-chinese?logo=github&amp;color=grey" alt="GitHub 派生数"></a>
-  <img src="https://img.shields.io/badge/Node.js-%3E%3D18-brightgreen?logo=node.js" alt="最低 Node.js 版本为 18">
-  <a href=".github/workflows/ci.yml"><img src="https://img.shields.io/badge/CI%20platforms-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey" alt="CI 平台为 Windows、macOS 和 Linux"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/yiheng8023/antigravity-chinese?color=green" alt="MIT 许可证"></a>
-</p>
-
-<p align="center">
-  <a href="README.md">简体中文</a> | <a href="README.en.md">English</a>
-</p>
+基于 yiheng8023/antigravity-chinese 的个人维护分支，针对实际使用中发现的漏译补充词库和界面匹配规则。
 
 当前源码版本 **v3.3.59**，维护目标为 **Antigravity App 2.34.0 / VS Code 扩展 1.13.0**。这是社区开源项目，提供桌面客户端与 VS Code 扩展的本地中文补丁、备份还原，以及可选的中文交互插件。
 
 本版统一汉化 Antigravity App 2.34.0 项目设置、未归属会话设置、插件市场、已安装列表和详情页中已核实的官方插件介绍。插件名、用户自定义内容及未匹配的介绍按原文显示。界面与安装验证见 [2.34.0 维护记录](docs/maintenance/antigravity-2.34.0.md)。Linux 便携路径支持见 [Linux 便携安装维护记录](docs/maintenance/linux-portable-install.md)。
 
 VS Code 扩展更新会覆盖本地汉化。更新扩展后请重新执行 `node cli.js install:vscode`，再重新加载 VS Code 窗口。
+
+## 本分支的汉化补充
+
+- 补充带重置时间的周限额组合文本。
+- 补充推理强度的低、中、高、极高及相关说明，并调整模型选择菜单的翻译范围。
+- 补充首页创建网页应用、添加 Gemini 功能、迁移开发工具配置的三条提示。
+
+这些改动已通过词库构建和静态语法检查，并安装到 Windows 上的 Antigravity App 2.34.0。完整测试套件及所有界面的实机验收仍待完成。
 
 ## 支持与验证范围
 
@@ -31,7 +26,9 @@ VS Code 扩展更新会覆盖本地汉化。更新扩展后请重新执行 `node
 | 独立 IDE、其他 IDE 扩展 | 尚无专用汉化安装器 | 不声明已适配 |
 | Antigravity CLI | 保留官方原生行为 | 不修改 CLI 二进制或终端界面 |
 
-本轮桌面 2.34.0 的实测范围是 Windows x64。macOS 和 Linux 的本轮验证范围为跨平台自动化。语音、远程智能体等官方灰度功能以实际账号开放情况为准。静态检查与候选字符串匹配均不代表整个上游产品的翻译覆盖率。
+以下验证范围沿用上游记录。本分支额外验证范围见上方说明。
+
+上游本轮桌面 2.34.0 的实测范围是 Windows x64。macOS 和 Linux 的本轮验证范围为跨平台自动化。语音、远程智能体等官方灰度功能以实际账号开放情况为准。静态检查与候选字符串匹配均不代表整个上游产品的翻译覆盖率。
 
 ## 安装与使用
 
@@ -103,63 +100,10 @@ npm run scan:drift -- "<frontend-bundle.js>" --report "<report.json>"
 
 主要模块：`cli.js` 管理生命周期，`core/` 提供运行时/协议/扩展与 ASAR 处理，`tools/` 提供构建和检查，`test/` 提供回归，`docs/maintenance/` 保存维护依据。问题报告见 [SECURITY.md](SECURITY.md)，贡献方式见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
----
+## 来源与许可证
 
-## 💖 自愿赞助与支持
+本项目派生自上游社区项目，感谢原作者与贡献者的工作。历史维护记录保留了上游实现和验证依据。
 
-如果 Antigravity 中文汉化项目对你的开发工作有所帮助，并且你愿意支持本项目的持续维护、文档优化、自动化测试与版本迭代，诚挚感谢任意金额的自愿赞助。赞助完全自愿，不构成任何服务级承诺。
-
-- **人民币赞助**：可扫描下方微信支付或支付宝收款码。
-- **跨境赞助 / 其他币种**：可以使用 **[PayPal 赞助链接](https://www.paypal.com/ncp/payment/LNTF8KXGJXMZY)**。实际可用币种、付款方式与换汇以 PayPal 结算页为准。
-
-付款前请核对结算页面显示的收款方。感谢你对开源项目的认可与支持！
-
-<table>
-  <tr>
-    <td align="center"><strong>微信支付（人民币）</strong><br><img src="docs/assets/sponsoring/wechat-pay.png" alt="微信支付自愿赞助收款码" width="260"></td>
-    <td align="center"><strong>支付宝（人民币）</strong><br><img src="docs/assets/sponsoring/alipay.png" alt="支付宝自愿赞助收款码" width="260"></td>
-  </tr>
-</table>
-
----
-
-## 👥 贡献者墙 (Contributors)
-
-诚挚感谢所有为本项目贡献代码、反馈 Bug、完善词库与文档的开发者们！
-
-- 感谢 **a705876883-arch** 提交用户内容保护修复方案，并提供误译复现与回归用例。 [PR #6](https://github.com/yiheng8023/antigravity-chinese/pull/6)
-- 感谢 **[fansID512](https://github.com/fansID512)** 提供详细环境、复现步骤和对照观察，帮助定位设置页掉帧问题。 [Issue #8](https://github.com/yiheng8023/antigravity-chinese/issues/8)
-- 感谢 **[MizuIro-H](https://github.com/MizuIro-H)** 在 Bazzite 上复现 Linux 解压版探测问题，提出修复方案并验证安装。 [Issue #9](https://github.com/yiheng8023/antigravity-chinese/issues/9)
-
-<p align="center">
-  <a href="https://github.com/yiheng8023/antigravity-chinese/graphs/contributors">
-    <img src="https://contrib.rocks/image?repo=yiheng8023/antigravity-chinese" alt="Contributors" />
-  </a>
-  <a href="https://github.com/fansID512">
-    <img src="https://avatars.githubusercontent.com/u/103017881?v=4" width="64" height="64" alt="fansID512 - 问题复现与性能诊断" title="fansID512：问题复现与性能诊断" />
-  </a>
-  <a href="https://github.com/MizuIro-H">
-    <img src="https://avatars.githubusercontent.com/u/123630455?v=4" width="64" height="64" alt="MizuIro-H - Linux 便携安装复现与修复建议" title="MizuIro-H - Linux 便携安装复现与修复建议" />
-  </a>
-</p>
-
----
-
-## 📈 Star 增长趋势与社区生态 (Star History)
-
-[![Star History Chart](https://api.star-history.com/svg?repos=yiheng8023/antigravity-chinese&type=Date)](https://star-history.com/#yiheng8023/antigravity-chinese&Date)
-
----
-
-## ⚠️ 免责声明与合规说明 (Disclaimer & Compliance)
-
-1. **非官方项目**：本项目为社区发起的开源本地化辅助工具，**非 Google 官方产品**，与 Google LLC 及其关联公司无官方从属或背书关系。
-2. **商标声明**：`Google`, `Google Antigravity`, `Gemini`, `Chrome` 等相关商标、产品名称及版权均归其各自所有者所有。
-3. **合法使用**：本项目仅供个人学习、技术研究及中文本地化辅助使用。本项目**绝不分发**任何官方专有二进制资产（如 `app.asar` 或源码文件），所有修改均在用户本地客户端合法完成。
-4. **安全与隐私**：本项目**绝不包含**任何形式的遥测上报、网络后门或用户凭据读取逻辑。代码 100% 开源透明。
-
----
-
-## 📄 开源许可证
-
-本项目基于 [MIT License](LICENSE) 协议开源。
+- 当前仓库为 https://github.com/kato-megumi-0923/antigravity-chinese
+- 上游项目为 https://github.com/yiheng8023/antigravity-chinese
+- 项目采用 [MIT License](LICENSE)，原有版权和许可证声明予以保留。
