@@ -372,7 +372,9 @@
     if (IGNORED_TAGS[el.tagName]) return true;
     if (el.isContentEditable || el.getAttribute('contenteditable') === '' ||
         el.getAttribute('contenteditable') === 'true' || el.getAttribute('contenteditable') === 'plaintext-only') return true;
-    // Model selector labels and reasoning effort options are interface text.
+    // React updates the composer model label in place when effort changes.
+    // Preserve that subtree while translating the separate effort menu.
+    if (el.getAttribute('data-testid') === 'model-selector-trigger') return true;
 
     var testId = el.getAttribute('data-testid');
     if ((CONTENT_TEST_IDS[testId] === 1 && !isCustomizationBreadcrumb(el)) || el.hasAttribute('data-ag-localization-skip') ||
@@ -782,6 +784,16 @@
 
   function translateElement(el, scanId, work) {
     if (!el || el.nodeType !== 1) return;
+    if (el.getAttribute('data-testid') === 'model-selector-trigger') {
+      var label = el.textContent.trim().replace(/\bExtra High\b/g, '极高').replace(/\bLow\b/g, '低').replace(/\bMedium\b/g, '中').replace(/\bHigh\b/g, '高');
+      el.setAttribute('data-ag-model-label', label);
+      if (!doc.getElementById('ag-model-label-style')) {
+        var style = doc.createElement('style');
+        style.id = 'ag-model-label-style';
+        style.textContent = '[data-ag-model-label]{position:relative;color:transparent!important}[data-ag-model-label] *{color:transparent!important}[data-ag-model-label] svg{color:var(--color-muted-foreground,#737373)!important}[data-ag-model-label]::before{content:attr(data-ag-model-label);position:absolute;left:0.6em;right:1.6em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--color-foreground,#454545);pointer-events:none}';
+        doc.head.appendChild(style);
+      }
+    }
     if (scanId && el._agyScanId === scanId) return;
     var translationMode = getElementTranslationMode(el);
     if (translationMode === 0) {
