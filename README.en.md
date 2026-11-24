@@ -15,9 +15,9 @@
   <a href="README.md">简体中文</a> | <a href="README.en.md">English</a>
 </p>
 
-Source version **v3.3.59** targets **Antigravity App 2.34.0 / VS Code extension 1.13.0**. This community project provides local Chinese patches, backup and restore for the desktop app and VS Code extension, plus an optional Chinese interaction plugin.
+Source version **v3.3.63** targets **Antigravity App 2.35.0 / VS Code extension 1.13.0**. This release updates the Chinese catalog summaries for CodeRabbit, Levels.fyi, and Zapier and documents recovery from a macOS desktop update signature failure.
 
-This release applies the same translations for verified official plugin descriptions across project settings, unassigned conversation settings, the Marketplace, the Installed list, and plugin details in Antigravity App 2.34.0. Plugin names, custom content, and unmatched descriptions retain their original text. See the [2.34.0 maintenance record](docs/maintenance/antigravity-2.34.0.md) for UI and installation coverage and the [Linux portable installation record](docs/maintenance/linux-portable-install.md) for portable path support.
+This community project provides local Chinese patches, backup and restore for the desktop app and VS Code extension, plus an optional Chinese interaction plugin. Verified summaries from the Google and partner catalogs use the same translation in Featured, Marketplace, Installed, plugin details, and settings. Plugin names, publisher-authored command and skill instructions, custom content, and unmatched fields retain their original text. See the [2.35.0 maintenance record](docs/maintenance/antigravity-2.35.0.md) for UI and installation coverage and the [Linux portable installation record](docs/maintenance/linux-portable-install.md) for portable path support.
 
 VS Code extension updates overwrite the local patch. After an extension update, rerun `node cli.js install:vscode` and reload the VS Code window.
 
@@ -25,13 +25,13 @@ VS Code extension updates overwrite the local patch. After an extension update, 
 
 | Surface | Implementation | Verified scope |
 | --- | --- | --- |
-| Antigravity App | ASAR preload, native menu/dialog text, versioned backup and restore | Windows x64 2.34.0 install, reinstall, restore and unpacked file verification. See the portable installation record for the Linux x64 2.33.0 lifecycle. |
+| Antigravity App | ASAR preload, native menu/dialog text, versioned backup and restore | Windows x64 2.35.0 install, reinstall, restore and unpacked file verification. See the portable installation record for the Linux x64 2.33.0 lifecycle. |
 | VS Code extension | Manifest, native menu and notification translation, local Webview proxy, separate backup/restore | See the [1.13.0 maintenance record](docs/maintenance/antigravity-2.33.1.md) for Windows installation, restoration and UI checks. |
 | Community Chinese plugin | Chinese interaction rules and maintenance diagnostics | Optional; not a Google official plugin |
 | Standalone IDE and other IDE extensions | No dedicated localization installer | No adaptation claim |
 | Antigravity CLI | Preserves upstream behavior | CLI binaries and terminal UI are unchanged |
 
-Desktop 2.34.0 verification on an installed product covers Windows x64. macOS and Linux coverage for this release consists of automated regressions. Gradually rolled-out features depend on account availability. Static checks and candidate-string matches do not measure whole-product translation coverage.
+Desktop 2.35.0 verification on an installed product covers Windows x64. Gradually rolled-out features depend on account availability. Static checks and candidate-string matches do not measure whole-product translation coverage.
 
 ## Installation and use
 
@@ -43,6 +43,8 @@ node cli.js install
 ```
 
 `install` detects the desktop app and VS Code extension and handles installed components. Windows users can run `install.bat`; macOS/Linux users can run `bash install.sh`. These wrapper scripts also install the optional community plugin.
+
+**macOS desktop updates.** The localization installer applies a local ad-hoc signature to the app. An Apple Silicon user updating from 2.33.1 to 2.34.0 reported that the update downloaded but failed signature verification during installation. If this happens, save your work, quit the app and reinstall the complete Antigravity App from the official DMG. Launch it and confirm the version before applying a compatible localization patch. Restoring `app.asar` alone cannot restore Google's signature for the whole app. [Official download](https://antigravity.google/download) · [Reproduction in #12](https://github.com/yiheng8023/antigravity-chinese/issues/12)
 
 ```bash
 node cli.js status
@@ -125,23 +127,17 @@ Please verify the payee name shown on the checkout page before confirming paymen
 
 ## 👥 Contributors
 
-Heartfelt thanks to all developers who contribute code, report bugs, and improve translations and documentation!
+Thank you to everyone who helps maintain, test, and improve the localization. GitHub counts commit authors on the default branch. We also recognize reports, reproduction steps, and design proposals here.
 
-- Thanks to **a705876883-arch** for proposing a fix for unintended translation of user content and supplying reproduction and regression cases. [PR #6](https://github.com/yiheng8023/antigravity-chinese/pull/6)
-- Thanks to **[fansID512](https://github.com/fansID512)** for detailed environment information, reproduction steps and comparison observations that helped diagnose settings stutter. [Issue #8](https://github.com/yiheng8023/antigravity-chinese/issues/8)
-- Thanks to **[MizuIro-H](https://github.com/MizuIro-H)** for reproducing the portable Linux detection problem on Bazzite, proposing a fix, and verifying installation. [Issue #9](https://github.com/yiheng8023/antigravity-chinese/issues/9)
-
-<p align="center">
-  <a href="https://github.com/yiheng8023/antigravity-chinese/graphs/contributors">
-    <img src="https://contrib.rocks/image?repo=yiheng8023/antigravity-chinese" alt="Contributors" />
-  </a>
-  <a href="https://github.com/fansID512">
-    <img src="https://avatars.githubusercontent.com/u/103017881?v=4" width="64" height="64" alt="fansID512 - bug reproduction and performance diagnosis" title="fansID512: bug reproduction and performance diagnosis" />
-  </a>
-  <a href="https://github.com/MizuIro-H">
-    <img src="https://avatars.githubusercontent.com/u/123630455?v=4" width="64" height="64" alt="MizuIro-H - portable Linux reproduction and fix proposal" title="MizuIro-H - portable Linux reproduction and fix proposal" />
-  </a>
-</p>
+| Contributor | Contribution |
+| --- | --- |
+| <a href="https://github.com/yiheng8023"><img src="https://avatars.githubusercontent.com/u/127850894?s=64&v=4" width="32" height="32" alt="" /> yiheng8023</a> | Maintains the localization, reviews changes, and publishes releases. |
+| <a href="https://github.com/a705876883-arch"><img src="https://avatars.githubusercontent.com/u/250879823?s=64&v=4" width="32" height="32" alt="" /> a705876883-arch</a> | Proposed a fix for unintended translation of user content and supplied reproduction and regression cases. [PR #6](https://github.com/yiheng8023/antigravity-chinese/pull/6) |
+| <a href="https://github.com/fansID512"><img src="https://avatars.githubusercontent.com/u/103017881?s=64&v=4" width="32" height="32" alt="" /> fansID512</a> | Provided detailed environment information, reproduction steps and comparison observations that helped diagnose settings stutter. [Issue #8](https://github.com/yiheng8023/antigravity-chinese/issues/8) |
+| <a href="https://github.com/MizuIro-H"><img src="https://avatars.githubusercontent.com/u/123630455?s=64&v=4" width="32" height="32" alt="" /> MizuIro-H</a> | Reproduced the portable Linux detection problem on Bazzite, proposed a fix, and verified installation. [Issue #9](https://github.com/yiheng8023/antigravity-chinese/issues/9) |
+| <a href="https://github.com/tangyixiao"><img src="https://avatars.githubusercontent.com/u/115929632?s=64&v=4" width="32" height="32" alt="" /> tangyixiao</a> | Reported ambiguous permission preset labels, contributed a fix and regression tests, and verified the global settings UI. [PR #11](https://github.com/yiheng8023/antigravity-chinese/pull/11) |
+| <a href="https://github.com/Qiinn-71"><img src="https://avatars.githubusercontent.com/u/262174075?s=64&v=4" width="32" height="32" alt="" /> Qiinn-71</a> | Compared three installation states on Apple Silicon and traced the macOS update failure to signature verification. [Issue #12](https://github.com/yiheng8023/antigravity-chinese/issues/12) |
+| <a href="https://github.com/mitang-ai"><img src="https://avatars.githubusercontent.com/u/275678971?s=64&v=4" width="32" height="32" alt="" /> mitang-ai</a> | Proposed and tested Swarm UI and slash-command search highlight changes, and shared a plugin detail translation proposal. [PR #14](https://github.com/yiheng8023/antigravity-chinese/pull/14) · [Issue #15](https://github.com/yiheng8023/antigravity-chinese/issues/15) |
 
 ---
 

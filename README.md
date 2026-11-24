@@ -2,9 +2,9 @@
 
 基于 yiheng8023/antigravity-chinese 的个人维护分支，针对实际使用中发现的漏译补充词库和界面匹配规则。
 
-当前源码版本 **v3.3.59**，维护目标为 **Antigravity App 2.34.0 / VS Code 扩展 1.13.0**。这是社区开源项目，提供桌面客户端与 VS Code 扩展的本地中文补丁、备份还原，以及可选的中文交互插件。
+当前源码版本 **v3.3.63**，维护目标为 **Antigravity App 2.35.0 / VS Code 扩展 1.13.0**。本版更新 CodeRabbit、Levels.fyi 和 Zapier 三条插件市场短介绍的译文，并补充 macOS 桌面更新验签失败时的恢复步骤。
 
-本版统一汉化 Antigravity App 2.34.0 项目设置、未归属会话设置、插件市场、已安装列表和详情页中已核实的官方插件介绍。插件名、用户自定义内容及未匹配的介绍按原文显示。界面与安装验证见 [2.34.0 维护记录](docs/maintenance/antigravity-2.34.0.md)。Linux 便携路径支持见 [Linux 便携安装维护记录](docs/maintenance/linux-portable-install.md)。
+这是社区开源项目，提供桌面客户端与 VS Code 扩展的本地中文补丁、备份还原，以及可选的中文交互插件。Google 官方及合作伙伴目录中已核实的短介绍，在市场、精选、已安装、详情和设置中复用同一译文。插件名、发布者提供的命令与技能说明、自定义内容和未匹配的完整字段按原文显示。界面与安装验证见 [2.35.0 维护记录](docs/maintenance/antigravity-2.35.0.md)。Linux 便携路径支持见 [Linux 便携安装维护记录](docs/maintenance/linux-portable-install.md)。
 
 VS Code 扩展更新会覆盖本地汉化。更新扩展后请重新执行 `node cli.js install:vscode`，再重新加载 VS Code 窗口。
 
@@ -20,7 +20,7 @@ VS Code 扩展更新会覆盖本地汉化。更新扩展后请重新执行 `node
 
 | 组件 | 实现 | 当前验证范围 |
 | --- | --- | --- |
-| Antigravity App | ASAR preload、原生菜单和弹窗文本补丁；版本备份与还原 | Windows x64 2.34.0 安装、重复安装、还原与外置文件核验。Linux x64 2.33.0 的安装验证见便携安装记录 |
+| Antigravity App | ASAR preload、原生菜单和弹窗文本补丁；版本备份与还原 | Windows x64 2.35.0 安装、重复安装、还原与外置文件核验。Linux x64 2.33.0 的安装验证见便携安装记录 |
 | VS Code 扩展 | 清单、原生菜单和通知翻译、Webview 本地代理、独立备份/还原 | Windows 1.13.0 安装、重复安装、还原与界面检查见 [1.13.0 维护记录](docs/maintenance/antigravity-2.33.1.md) |
 | 社区中文插件 | 中文交互规则与维护诊断技能 | 可选安装；不代表 Google 官方插件 |
 | 独立 IDE、其他 IDE 扩展 | 尚无专用汉化安装器 | 不声明已适配 |
@@ -40,6 +40,8 @@ node cli.js install
 ```
 
 `install` 自动检测桌面客户端及 VS Code 扩展，处理已安装的组件。Windows 可双击 `install.bat`；macOS/Linux 可运行 `bash install.sh`。这两个脚本还会安装可选的社区中文插件。
+
+**macOS 桌面更新。** 汉化安装器会对应用进行本地临时签名（ad-hoc）。在 Apple Silicon 上从 2.33.1 更新至 2.34.0 时，有用户遇到更新已下载、安装时签名验证失败的情况。遇到此提示，请保存工作并退出应用，从官方 DMG 重新安装完整的 Antigravity App，启动核对版本后再应用适配该版本的汉化。仅还原 `app.asar` 无法恢复整个应用的 Google 签名。[官方下载](https://antigravity.google/download) · [复现记录 #12](https://github.com/yiheng8023/antigravity-chinese/issues/12)
 
 ```bash
 node cli.js status

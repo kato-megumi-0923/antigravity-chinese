@@ -9,6 +9,241 @@ const dictionary = require('../dict/zh-CN.json');
 const officialPluginDescriptions = require('../dict/scoped/official-plugin-descriptions.json');
 const { installOfficialPluginDescriptionSourceCheck } = require('../core/official-plugin-description-source');
 
+test('2.35 automation form translates display text and preserves the draft and option names', async t => {
+  const placeholder = 'What should the agent do on each run? For example: summarize new bugs assigned to me and anything that changed overnight.';
+  const { document } = await fixture(t, `
+    <main data-testid="new-sidecar-modal" data-kind="local">
+      <input data-testid="new-sidecar-name" placeholder="Untitled" value="Instructions">
+      <span data-testid="new-sidecar-title-required"><span aria-hidden="true"></span>Required</span>
+      <span id="summary">Uses your local files and tools. Schedules only.</span>
+      <h2 id="trigger">Trigger</h2>
+      <div data-testid="automation-schedule-editor">
+        <span class="text-muted-foreground select-none" id="at">at</span>
+        <button data-testid="schedule-time" value="9:0">9:00 AM</button>
+      </div>
+      <h2 id="instructions">Instructions</h2>
+      <textarea data-testid="new-sidecar-prompt" placeholder="${placeholder}">Required</textarea>
+    </main>
+    <span class="text-muted-foreground select-none" id="outside">at</span>
+    <div data-select-popup role="listbox">
+      <div role="option" data-value="system">System UI</div>
+      <div role="option" data-value="inter">Inter</div>
+      <div role="option" data-value="google-sans">Google Sans</div>
+      <div role="option" data-value="Legacy Dark">Legacy Dark</div>
+      <div role="option" data-value="Legacy Light">Legacy Light</div>
+      <div role="option" data-value="Solarized Dark">Solarized Dark</div>
+    </div>`);
+  const text = selector => document.querySelector(selector).textContent;
+  assert.equal(text('[data-testid="new-sidecar-title-required"]'), '必填');
+  assert.equal(text('#summary'), '使用本机文件和工具，仅支持定时运行。');
+  assert.equal(text('#trigger'), '触发条件');
+  assert.equal(text('#at'), '于');
+  assert.equal(text('#outside'), 'at');
+  assert.equal(text('#instructions'), '执行指令');
+  assert.equal(document.querySelector('input').value, 'Instructions');
+  assert.equal(document.querySelector('textarea').value, 'Required');
+  assert.match(document.querySelector('textarea').placeholder, /^智能体每次运行时应做什么？/);
+  assert.equal(document.querySelector('[data-testid="schedule-time"]').value, '9:0');
+  assert.deepEqual([...document.querySelectorAll('[role="option"]')].map(el => [el.dataset.value, el.textContent]), [
+    ['system', '系统界面字体'], ['inter', 'Inter'], ['google-sans', 'Google Sans'],
+    ['Legacy Dark', '旧版深色'], ['Legacy Light', '旧版浅色'], ['Solarized Dark', 'Solarized Dark']
+  ]);
+});
+
+test('2.35 sentence case setting titles and split plan labels localize without changing user text', async t => {
+  const cases = [
+    ['Prevent sleep', '阻止系统休眠'],
+    ['Keep in menu bar', '保持在菜单栏/托盘'],
+    ['Device name', '设备名称'],
+    ['Notification settings', '通知设置'],
+    ['Conversation steps', '对话步骤'],
+    ['Font size', '字体大小'],
+    ['Conversation width', '对话面板宽度'],
+    ['Screen reader mode', '屏幕阅读器模式'],
+    ['Enable notifications for agent', '启用智能体系统通知'],
+    ['Enable sounds for agent', '启用智能体提示音'],
+    ['Enable AI credit overages', '启用超额 AI 积分计费'],
+    ['Open links in', '链接打开方式'],
+    ['Download location', '下载位置'],
+    ['Browsing history', '浏览历史'],
+    ['Browser actuation rules', '浏览器操作执行规则'],
+    ['Enable telemetry', '启用遥测诊断'],
+    ['Marketing emails', '营销与产品动态邮件']
+  ];
+  const { document } = await fixture(t, `
+    <div class="settings-modal-container">
+      ${cases.map(([source]) => `<div class="font-medium setting-label">${source}</div>`).join('')}
+      <div id="plan-account" class="font-medium">Your plan: Google AI Pro</div>
+      <div id="plan-models" class="font-medium">Your plan: <!-- -->Enterprise Custom</div>
+      <div id="plan-unknown" class="font-medium">Your plan</div>
+      <div class="prose" id="quoted">Font size</div>
+    </div>
+    <div role="menuitem"><div id="environment">Runs on this machine</div></div>
+    <div id="outside" class="font-medium">Your plan: Google AI Pro</div>
+    <div data-testid="user-input-step">Prevent sleep</div>`);
+  assert.deepEqual([...document.querySelectorAll('.setting-label')].map(el => el.textContent), cases.map(([, expected]) => expected));
+  assert.equal(document.querySelector('#plan-account').textContent, '当前方案：Google AI Pro');
+  assert.match(document.querySelector('#plan-models').textContent, /^当前方案： *Enterprise Custom$/);
+  assert.equal(document.querySelector('#plan-unknown').textContent, '当前方案');
+  assert.equal(document.querySelector('#environment').textContent, '在此电脑上运行');
+  assert.equal(document.querySelector('#quoted').textContent, 'Font size');
+  assert.equal(document.querySelector('#outside').textContent, 'Your plan: Google AI Pro');
+  assert.equal(document.querySelector('[data-testid="user-input-step"]').textContent, 'Prevent sleep');
+});
+
+test('2.35 queued status and locked permission labels translate without changing task names', async t => {
+  const { document, window } = await fixture(t, `
+    <button data-testid="permissions-selector-trigger" aria-disabled="true"
+      aria-label="Agent permissions preset: Default, Permissions cannot be changed while the agent is running"><span>Default</span></button>
+    <div role="region" aria-label="Queued messages"><span data-testid="queued-messages-status" title="Waiting on Settings">Waiting on Settings</span></div>
+    <div class="prose"><span title="Waiting on Settings">Waiting on Settings</span></div>
+    <div role="status">Message queued. Sends after background work finishes. Actions available: Send Now, Edit, Delete.</div>`);
+  const trigger = document.querySelector('button');
+  assert.equal(trigger.getAttribute('aria-label'), '智能体权限预设：默认，智能体运行期间无法更改权限');
+  const status = document.querySelector('[data-testid="queued-messages-status"]');
+  assert.equal(status.textContent, '正在等待 Settings');
+  assert.equal(status.title, '正在等待 Settings');
+  assert.equal(document.querySelector('.prose span').textContent, 'Waiting on Settings');
+  assert.equal(document.querySelector('.prose span').title, 'Waiting on Settings');
+  assert.equal(document.querySelector('[role="status"]').textContent, '消息已排队，后台工作完成后发送。可立即发送、编辑或删除。');
+
+  status.textContent = 'Waiting on Default and Local';
+  status.title = status.textContent;
+  await settle(window);
+  assert.equal(status.textContent, '正在等待 Default and Local');
+  assert.equal(status.title, '正在等待 Default and Local');
+});
+
+test('2.34 conversation permission presets translate labels and accessible names without changing values or authored text', async t => {
+  const { document, window } = await fixture(t, `
+    <button data-testid="permissions-selector-trigger" aria-label="Agent permissions preset selector, current: Auto"><span>Auto</span></button>
+    <div data-testid="permissions-menu">
+      <div role="menuitem" data-testid="permissions-preset-option-auto"><span class="truncate">Auto</span></div>
+      <div role="menuitem" data-testid="permissions-preset-option-turbo"><span class="truncate"><span><span class="truncate">Turbo</span>
+        <span data-testid="permissions-default-tag">Default</span></span></span></div>
+      <div role="menuitem" data-testid="permissions-use-global-settings"><span class="truncate">Use Global Settings</span>
+        <span class="truncate text-muted-foreground">Turbo</span></div>
+    </div>
+    <div id="other"><span>Auto</span><span>Turbo</span></div>
+    <section data-testid="user-message-content"><span>Auto</span><span>Turbo</span></section>`);
+  const trigger = document.querySelector('button');
+  const menus = document.querySelector('[data-testid="permissions-menu"]');
+  assert.equal(trigger.textContent, '自动审查');
+  assert.equal(trigger.getAttribute('aria-label'), '智能体权限预设选择器，当前：自动审查');
+  assert.equal(menus.querySelector('[data-testid="permissions-preset-option-auto"] .truncate').textContent, '自动审查');
+  assert.equal(menus.querySelector('[data-testid="permissions-preset-option-turbo"] .truncate .truncate').textContent, '完全权限');
+  assert.equal(menus.querySelector('[data-testid="permissions-use-global-settings"] .text-muted-foreground').textContent, '完全权限');
+  assert.deepEqual([...document.querySelectorAll('#other span')].map(el => el.textContent), ['Auto', '极速']);
+  assert.deepEqual([...document.querySelectorAll('section span')].map(el => el.textContent), ['Auto', 'Turbo']);
+
+  trigger.firstChild.textContent = 'Turbo';
+  trigger.setAttribute('aria-label', 'Agent permissions preset selector, current: Turbo');
+  await settle(window);
+  assert.equal(trigger.textContent, '完全权限');
+  assert.equal(trigger.getAttribute('aria-label'), '智能体权限预设选择器，当前：完全权限');
+  trigger.setAttribute('aria-disabled', 'true');
+  trigger.setAttribute('aria-label', 'Agent permissions preset: Turbo, Example policy');
+  await settle(window);
+  assert.equal(trigger.getAttribute('aria-label'), '智能体权限预设：完全权限，Example policy');
+  document.querySelector('section').append(trigger);
+  await settle(window);
+  assert.equal(trigger.textContent, 'Turbo');
+  assert.equal(trigger.getAttribute('aria-label'), 'Agent permissions preset: Turbo, Example policy');
+});
+
+test('2.34 settings permission rows and portaled options distinguish presets from other selects', async t => {
+  const frames = [];
+  const turn = () => new Promise(resolve => setImmediate(resolve));
+  async function drainTranslation(window) {
+    // Let the mutation observer schedule work before stepping through the frames.
+    await turn();
+    for (let i = 0; frames.length && i < 100; i++) {
+      for (const callback of frames.splice(0)) callback(window.performance.now());
+      await turn();
+    }
+    assert.equal(frames.length, 0, 'permission menu translation should finish within 100 frames');
+  }
+
+  const row = (id, name, description, value) => `
+    <span id="dropdown-label-${id}">${name}</span><span id="dropdown-description-${id}">${description}</span>
+    <button class="agy-select-trigger" aria-labelledby="dropdown-label-${id} dropdown-value-${id}" aria-describedby="dropdown-description-${id}">
+      <span id="dropdown-value-${id}" class="truncate">${value}</span></button>`;
+  const option = (label, description) => `<div role="option" class="agy-overlay-item"><div>
+    <div class="truncate">${label}</div><span class="text-muted-foreground">${description}</span></div></div>`;
+  const { document, window } = await fixture(t,
+    row('project', 'Permission preset', 'Controls the actions the agent can take.', 'Auto') +
+    row('local', 'This computer', 'Controls the actions the agent can take.', 'Turbo') +
+    row('remote', 'Remote', 'Controls permissions for remote conversations.', 'Turbo') +
+    row('model', 'Remote', 'Select a model.', 'Auto') + `
+    <select aria-labelledby="dropdown-label-local" aria-describedby="dropdown-description-local">
+      <option value="Auto">Auto</option><option value="Turbo">Turbo</option></select>
+    <div data-select-popup></div>`, {
+    beforeStart(doc) {
+      doc.defaultView.requestAnimationFrame = callback => frames.push(callback);
+      doc.defaultView.setInterval = () => 0;
+    },
+    waitForInitialTranslation: drainTranslation
+  });
+  const value = id => document.getElementById('dropdown-value-' + id);
+  assert.deepEqual(['project', 'local', 'remote', 'model'].map(id => value(id).textContent),
+    ['自动审查', '完全权限', '完全权限', 'Auto']);
+  assert.deepEqual([...document.querySelector('select').options].map(el => [el.value, el.textContent]),
+    [['Auto', '自动审查'], ['Turbo', '完全权限']]);
+
+  const popup = document.querySelector('[data-select-popup]');
+  popup.innerHTML = option('Auto', 'Automatically decide if commands run.') +
+    option('Turbo (disabled by admin)', 'Run all commands without restrictions.') +
+    option('Turbo', 'Run all commands without restrictions.') + option('Turbo', 'Video playback speed.');
+  await drainTranslation(window);
+  const labels = [...popup.querySelectorAll('.truncate')];
+  assert.deepEqual(labels.map(el => el.textContent), ['自动审查', '完全权限（管理员已禁用）', '完全权限', '极速']);
+  // Reuse text nodes between the two selects after both descriptions have been localized.
+  labels[2].appendChild(labels[3].firstChild);
+  labels[3].appendChild(labels[2].firstChild);
+  await drainTranslation(window);
+  assert.deepEqual(labels.slice(2).map(el => el.textContent), ['完全权限', '极速']);
+});
+
+test('permission labels track late or removed descriptions and preserve generic text spacing', async t => {
+  const { document, window } = await fixture(t, `
+    <div data-select-popup><div role="option" class="agy-overlay-item"><div>
+      <div class="truncate" id="popup-value">Turbo</div>
+    </div></div></div>
+    <div><div class="flex-1" id="setting-labels"><div>
+      <span id="dropdown-label-1">Permission preset</span>
+    </div></div><div class="shrink-0">
+      <button class="agy-select-trigger" aria-labelledby="dropdown-label-1 dropdown-value-1" aria-describedby="dropdown-description-1">
+        <span class="truncate" id="dropdown-value-1">Auto</span>
+      </button>
+    </div></div>
+    <span id="ordinary"><b>Playback X</b>Turbo</span>
+    <p id="hint">Auto needs the terminal sandbox, which isn't available on this host.</p>`);
+  const popup = document.getElementById('popup-value');
+  const value = document.getElementById('dropdown-value-1');
+  assert.equal(popup.textContent, '极速');
+  assert.equal(value.textContent, 'Auto');
+  assert.equal(document.getElementById('ordinary').textContent, 'Playback X 极速');
+  assert.equal(document.getElementById('hint').textContent, '「自动审查」需要终端沙箱，但此主机不支持终端沙箱。');
+
+  const subtitle = document.createElement('span');
+  subtitle.className = 'text-muted-foreground';
+  subtitle.textContent = 'Run all commands without restrictions.';
+  popup.after(subtitle);
+  const description = document.createElement('span');
+  description.id = 'dropdown-description-1';
+  description.textContent = 'Controls the actions the agent can take.';
+  document.getElementById('setting-labels').appendChild(description);
+  await settle(window);
+  assert.equal(popup.textContent, '完全权限');
+  assert.equal(value.textContent, '自动审查');
+
+  subtitle.firstChild.nodeValue = 'Video playback speed.';
+  description.remove();
+  await settle(window);
+  assert.equal(popup.textContent, '极速');
+  assert.equal(value.textContent, 'Auto');
+});
+
 test('2.34 inline requests translate renderer controls while retaining request and answer payloads', async t => {
   const { document, translate } = await fixture(t, `
     <section data-testid="agent-response">
@@ -265,7 +500,7 @@ async function fixture(t, html, options = {}) {
   options.beforeStart?.(window.document);
   if (options.pluginDescriptions) window.eval(`(${installOfficialPluginDescriptionSourceCheck})(${JSON.stringify(officialPluginDescriptions)})`);
   window.eval(runtime);
-  await settle(window);
+  await (options.waitForInitialTranslation || settle)(window);
   return { window, document: window.document, translate: window.__AGY_TRANSLATE_EL__ };
 }
 
@@ -981,6 +1216,7 @@ const docsPluginOrigin = {
 test('project and unassigned settings localize verified official descriptions and preserve identical custom copy', async t => {
   const text = 'Read, draft, and edit docs.';
   const swarmText = 'Unlock the power of agent swarms.';
+  const geminiText = "Build applications and shell workflows with the Gemini Interactions API, Decisions API, Live API, Genie 4 interactive worlds, and Gemini API CLI, including text, image, video, speech, and music generation, managed agents, and real-time multimodal streaming.";
   const row = (id, name, description) => `
     <article>
       <span class="font-medium truncate" data-tooltip-id="${id}">${name}</span>
@@ -993,6 +1229,8 @@ test('project and unassigned settings localize verified official descriptions an
         ${row('docs', 'Google Docs', text)}
         ${row('local-docs', 'Google Docs', text)}
         ${row('other-origin', 'Google Docs', text)}
+        ${row('gemini', 'Gemini API', geminiText)}
+        ${row('local-gemini', 'Gemini API', geminiText)}
         ${row('swarm', 'Swarm', swarmText)}
         ${row('local-swarm', 'Swarm', swarmText)}
         ${row('edited', 'Google Docs', 'Settings')}
@@ -1006,11 +1244,13 @@ test('project and unassigned settings localize verified official descriptions an
       for (const el of doc.querySelectorAll('[data-case]')) {
         const kind = el.getAttribute('data-case');
         const swarm = kind.endsWith('swarm');
-        const name = swarm ? 'swarm' : kind === 'guidance' ? 'modern-web-guidance-plugin' : 'gdocs';
+        const gemini = kind.endsWith('gemini');
+        const name = swarm ? 'swarm' : gemini ? 'gemini-api' : kind === 'guidance' ? 'modern-web-guidance-plugin' : 'gdocs';
         let provenance = {};
         if (kind === 'swarm') provenance = { isBuiltin: true };
         if (kind === 'docs' || kind === 'edited') provenance = docsPluginOrigin;
         if (kind === 'other-origin') provenance = { installedFrom: { ...docsPluginOrigin.installedFrom, id: 'antigravity-plugins-official/plugin/other' } };
+        if (kind === 'gemini') provenance = { installedFrom: { ...docsPluginOrigin.installedFrom, id: 'antigravity-plugins-official/plugin/gemini-api' } };
         if (kind === 'guidance') provenance = { installedFrom: { ...docsPluginOrigin.installedFrom, id: 'antigravity-plugins-official/plugin/modern-web-guidance-plugin' } };
         el.__reactFiber$fixture = pluginDescriptionFiber(el, name, provenance).fiber;
       }
@@ -1023,15 +1263,52 @@ test('project and unassigned settings localize verified official descriptions an
     assert.equal(get('docs').title, 'Settings');
     assert.equal(get('local-docs').textContent, text);
     assert.equal(get('other-origin').textContent, text);
+    assert.equal(get('gemini').textContent, officialPluginDescriptions[geminiText].translation);
+    assert.equal(get('local-gemini').textContent, geminiText);
     assert.equal(get('swarm').textContent, '发挥多智能体协作的优势。');
     assert.equal(get('local-swarm').textContent, swarmText);
     assert.equal(get('edited').textContent, 'Settings');
     assert.equal(get('guidance').textContent, '让您的编码智能体紧跟最新的 Web 最佳实践。');
     assert.equal(view.querySelector('[data-tooltip-id="guidance"]').textContent, 'Modern Web Guidance');
     assert.equal(view.querySelector('[data-tooltip-id="docs"]').textContent, 'Google Docs');
+    assert.equal(view.querySelector('[data-tooltip-id="gemini"]').textContent, 'Gemini API');
     assert.equal(view.querySelector('button').textContent, '复制路径');
   }
   assert.equal(document.querySelector('#quoted [data-case="docs"]').textContent, text);
+});
+
+test('reviewed partner summaries cover both catalog revisions without translating local copies', async t => {
+  const plugins = ['coderabbit', 'levels-fyi', 'zapier'];
+  const rows = [];
+  for (const plugin of plugins) {
+    const variants = Object.entries(officialPluginDescriptions).filter(([, entry]) => entry.plugin === plugin);
+    assert.ok(variants.length >= 2, plugin);
+    for (const [source, entry] of variants) {
+      const marketplace = 'antigravity-plugins-partners';
+      const installedFrom = { marketplace, id: marketplace + '/plugin/' + plugin };
+      rows.push({ plugin, source, expected: entry.translation, provenance: { installedFrom } });
+      rows.push({ plugin, source, expected: source, provenance: {} });
+    }
+  }
+  const markup = rows.map((_, i) => `<article>
+    <span class="font-medium truncate"></span>
+    <div class="text-sm text-muted-foreground line-clamp-2 mt-1" data-row="${i}"></div>
+    <button>Copy Path</button></article>`).join('');
+  const { document } = await fixture(t, `<section data-testid="project-customizations-content">
+    <div data-testid="workspace-customizations-view">${markup}</div></section>`, {
+    pluginDescriptions: true,
+    beforeStart(doc) {
+      for (const el of doc.querySelectorAll('[data-row]')) {
+        const { plugin, source, provenance } = rows[Number(el.dataset.row)];
+        el.textContent = source;
+        el.previousElementSibling.textContent = plugin;
+        el.__reactFiber$fixture = pluginDescriptionFiber(el, plugin, provenance).fiber;
+      }
+    }
+  });
+  for (const el of document.querySelectorAll('[data-row]')) {
+    assert.equal(el.textContent, rows[Number(el.dataset.row)].expected);
+  }
 });
 
 test('official description translation follows the committed renderer and restores when moved into user content', async t => {
@@ -1170,6 +1447,97 @@ test('marketplace, installed cards, and detail headers share the official copy a
     assert.ok(['Google Docs', 'Swarm'].includes(el.textContent));
   }
   for (const el of document.querySelectorAll('.prose p')) assert.equal(el.textContent, english);
+});
+
+test('featured descriptions and their tooltips use the same verified partner text', async t => {
+  const source = "Up-to-date documentation lookup. Pull version-specific documentation and code examples directly from source repositories into your coding agent's context.";
+  const expected = officialPluginDescriptions[source].translation;
+  const { document, translate } = await fixture(t, `
+    <section data-testid="featured-carousel">
+      <button data-testid="featured-carousel-member-tile" data-member-name="Settings" aria-label="Settings, Installed" title="Settings"></button>
+      <div role="tabpanel"><div>
+        <h3 class="font-semibold truncate">Settings</h3>
+        <p id="verified" class="text-muted-foreground line-clamp-3" title="${source}">${source}</p>
+        <a aria-label="Details for Settings">Details</a></div>
+        <div><p id="unverified" class="text-muted-foreground line-clamp-3" title="${source}">${source}</p></div>
+      </div>
+    </section>`, {
+    pluginDescriptions: true,
+    beforeStart(doc) {
+      for (const [id, marketplace] of [['verified', 'antigravity-plugins-partners'], ['unverified', 'antigravity-plugins-official']]) {
+        const el = doc.getElementById(id);
+        const root = { tag: 3 };
+        root.stateNode = { current: root };
+        el.__reactFiber$fixture = {
+          stateNode: el, memoizedProps: { children: source, title: source },
+          return: { return: {
+            return: root, memoizedProps: { member: { description: source, item: {
+              kind: { case: 'plugin' }, marketplace, id: marketplace + '/plugin/context7', description: source
+            } } }
+          } }
+        };
+      }
+    }
+  });
+  const verified = document.getElementById('verified');
+  const unverified = document.getElementById('unverified');
+  assert.equal(verified.textContent, expected);
+  assert.equal(verified.title, expected);
+  assert.equal(unverified.textContent, source);
+  assert.equal(unverified.title, source);
+  assert.equal(document.querySelector('h3').textContent, 'Settings');
+  assert.equal(document.querySelector('button').title, 'Settings');
+  assert.equal(document.querySelector('button').getAttribute('aria-label'), 'Settings，已安装');
+  assert.equal(document.querySelector('a').getAttribute('aria-label'), '查看详情：Settings');
+
+  const fiber = verified.__reactFiber$fixture;
+  fiber.return.return.memoizedProps.member.item.id = 'antigravity-plugins-partners/plugin/another-plugin';
+  translate(verified);
+  assert.equal(verified.textContent, source);
+  assert.equal(verified.title, source);
+});
+
+test('host settings, marketplace sections, disclosure and review controls translate in their own surfaces', async t => {
+  const notice = 'Google does not control the availability or functionality of third party developer tools. Your data from third party developer tools connected to your Antigravity instance may be shared with Google. Google will protect any such data in accordance with the Google Privacy Policy, found here:';
+  const policy = 'https://policies.google.com/privacy';
+  const { document } = await fixture(t, `
+    <div id="setting">Queued messages</div>
+    <div data-testid="customizations-marketplace"><section aria-label="Science"><div><h2>Science</h2>
+      <p>Agent skills, databases, and interactive viewers for scientific research.</p></div>
+      <div><button aria-label="See more in Science">See more</button></div></section></div>
+    <button data-testid="marketplace-category-option-science"><span>Science</span></button>
+    <span data-testid="marketplace-category-chip">Science<button aria-label="Clear category"></button></span>
+    <div data-testid="customizations-installed-plugins"><button aria-label="See 3 more plugins">See 3 more</button></div>
+    <div id="elsewhere">Science</div>
+    <main data-testid="plugin-detail">
+      <p class="text-muted-foreground leading-relaxed">${notice}</p>
+      <p data-testid="third-party-tools-disclaimer" class="text-muted-foreground leading-relaxed">${notice} <span><a href="${policy}">${policy}</a></span></p>
+    </main>
+    <div data-testid="agent-message">
+      <div data-testid="changed-files-card"><div data-testid="changed-files-card-header">
+        <div><span class="truncate">2 files changed</span></div>
+        <button data-testid="changed-files-card-review"><span>Review</span></button>
+      </div></div>
+      <div class="prose"><button>Review</button><span>Queued messages</span></div>
+    </div>`);
+  const section = document.querySelector('section');
+  assert.equal(document.getElementById('setting').textContent, '排队消息');
+  assert.equal(section.getAttribute('aria-label'), '科研');
+  assert.equal(section.querySelector('h2').textContent, '科研');
+  assert.equal(section.querySelector('p').textContent, '面向科研的智能体技能、数据库和交互式查看器。');
+  assert.equal(section.querySelector('button').getAttribute('aria-label'), '在科研中查看更多');
+  assert.equal(document.querySelector('[data-testid="marketplace-category-option-science"]').textContent, '科研');
+  assert.equal(document.querySelector('[data-testid="marketplace-category-chip"]').textContent, '科研');
+  assert.equal(document.querySelector('[data-testid="customizations-installed-plugins"] button').getAttribute('aria-label'), '再查看 3 个插件');
+  assert.equal(document.getElementById('elsewhere').textContent, 'Science');
+  const disclosure = document.querySelector('[data-testid="third-party-tools-disclaimer"]');
+  assert.equal(disclosure.firstChild.textContent.trim(), dictionary.exact[notice]);
+  assert.equal(disclosure.querySelector('a').getAttribute('href'), policy);
+  assert.equal(document.querySelector('main p:not([data-testid])').textContent, notice);
+  assert.equal(document.querySelector('[data-testid="changed-files-card-review"]').textContent, '审查');
+  assert.equal(document.querySelector('[data-testid="changed-files-card-header"] .truncate').textContent, '2 个文件已修改');
+  assert.equal(document.querySelector('.prose button').textContent, 'Review');
+  assert.equal(document.querySelector('.prose span').textContent, 'Queued messages');
 });
 
 test('customization cards and details preserve metadata while actions translate', async t => {

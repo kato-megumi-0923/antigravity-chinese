@@ -44,8 +44,8 @@ const goldenCases = [
   { input: '1 MCP server failed to start', expected: '1 个 MCP 服务器启动失败' },
   { input: '12 MCP servers failed to start', expected: '12 个 MCP 服务器启动失败' },
   { input: "Default needs the terminal sandbox, which isn't available on this host.", expected: '默认模式需要终端沙箱，但此主机不支持终端沙箱。' },
-  { input: "Auto needs the terminal sandbox, which isn't available on this host.", expected: '自动模式需要终端沙箱，但此主机不支持终端沙箱。' },
-  { input: "Default and Auto need the terminal sandbox, which isn't available on this host.", expected: '默认和自动模式需要终端沙箱，但此主机不支持终端沙箱。' },
+  { input: "Auto needs the terminal sandbox, which isn't available on this host.", expected: '「自动审查」需要终端沙箱，但此主机不支持终端沙箱。' },
+  { input: "Default and Auto need the terminal sandbox, which isn't available on this host.", expected: '「默认」和「自动审查」需要终端沙箱，但此主机不支持终端沙箱。' },
   { input: 'Welcome back, Alex. Where should we pick up?', expected: '欢迎回来，Alex。我们从哪里继续？' },
   { input: 'Select project, current: No Project', expected: '选择项目，当前无项目关联' },
   { input: 'Select project, current: Settings', expected: '选择项目，当前：Settings' },
@@ -694,9 +694,6 @@ console.log('✅ [PASS] 标点与快捷键容差变异测试通过 (3/3)');
 
 // 5. 模型选择器与模型规格原样保留断言 (不汉化)
 const modelSpecs = [
-  "Low",
-  "Medium",
-  "High",
   "Fast",
   "Limited",
   "Limited time",
@@ -706,6 +703,9 @@ const modelSpecs = [
   "Claude Opus 4.6 (Thinking)",
   "GPT-OSS 120B (Medium)"
 ];
+for (const [source, translated] of Object.entries({Low: "低", Medium: "中", High: "高", "Extra High": "极高"})) {
+  assert.strictEqual(engine.translate(source), translated);
+}
 for (const spec of modelSpecs) {
   assert.strictEqual(engine.translate(spec), null, `Model spec should NOT be translated: ${spec}`);
 }

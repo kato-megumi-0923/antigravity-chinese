@@ -310,7 +310,10 @@
         el.closest('[data-testid="workspace-customizations-view"]')) return true;
     if (el.matches('div.font-medium.text-foreground.truncate, div.text-sm.text-muted-foreground.truncate, img') &&
         el.closest('[data-testid="customization-card"][data-card-name]')) return true;
-    if (el.matches('h1.text-xl.font-medium.truncate, p.text-muted-foreground.leading-relaxed, span.font-medium.flex-shrink-0, span.text-muted-foreground.truncate[title]')) {
+    if (el.matches('h3.font-semibold.truncate, p.text-muted-foreground.line-clamp-3[title]') &&
+        el.closest('[data-testid="featured-carousel"] [role="tabpanel"]')) return true;
+    if (el.tagName === 'IMG' && el.closest('[data-testid="featured-carousel-member-tile"]')) return true;
+    if (el.matches('h1.text-xl.font-medium.truncate, p.text-muted-foreground.leading-relaxed:not([data-testid="third-party-tools-disclaimer"]), span.font-medium.flex-shrink-0, span.text-muted-foreground.truncate[title]')) {
       var detail = el.closest('[data-testid="plugin-detail"], [role="dialog"]');
       if (detail && (detail.getAttribute('data-testid') === 'plugin-detail' ||
           detail.querySelector('h1.text-xl.font-medium.truncate, [data-testid="doc-row-modal"]'))) return true;
@@ -459,7 +462,14 @@
     var role = el.getAttribute('role');
     return el.tagName === 'BUTTON' || el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' ||
       role === 'button' || role === 'status' || el.getAttribute('data-testid') === 'plan-command-fyi-alert' ||
-      isSideQuestionUi(el) || isTimestampUi(el);
+      isSideQuestionUi(el) || isTimestampUi(el) || isChangedFilesCardUi(el);
+  }
+
+  function isChangedFilesCardUi(el) {
+    return (el.getAttribute('data-testid') === 'changed-files-card-review' ||
+      (el.tagName === 'SPAN' && el.classList.contains('truncate') &&
+        el.parentElement?.parentElement?.getAttribute('data-testid') === 'changed-files-card-header')) &&
+      !!el.closest('[data-testid="changed-files-card"]');
   }
 
   function isSideQuestionUi(el) {
@@ -473,8 +483,115 @@
       (el.classList.contains('tabular-nums') && !!el.closest('[data-testid="conversation-row-sidebar"]'));
   }
 
+  function translateMarketplaceCategory(text, el) {
+    if (text === 'Science' && el && (el.closest('[data-testid="marketplace-category-option-science"], [data-testid="marketplace-category-chip"]') ||
+        (el.matches('section[aria-label], section[aria-label] > div > h2') && el.closest('[data-testid="customizations-marketplace"]')))) {
+      return '科研';
+    }
+    if (el?.tagName === 'BUTTON' && (text === 'See more in Science' || text === 'See less in Science') &&
+        el.closest('[data-testid="customizations-marketplace"] section[aria-label]')) {
+      return text === 'See more in Science' ? '在科研中查看更多' : '在科研中收起';
+    }
+    return null;
+  }
+
+  var permissionPresets = {
+    Auto: { label: '自动审查', description: 'Automatically decide if commands run.' },
+    Turbo: { label: '完全权限', description: 'Run all commands without restrictions.' }
+  };
+  var adminDisabledSuffix = ' (disabled by admin)';
+  var permissionOptionSelector = '[data-select-popup] [role="option"].agy-overlay-item';
+
+  function isPermissionSettingsSelect(control, valueId) {
+    var ids = (control.getAttribute('aria-labelledby') || '').split(' ');
+    if (!ids[0].startsWith('dropdown-label-') ||
+        (valueId ? ids.length !== 2 || ids[1] !== valueId : ids.length !== 1)) return false;
+    var descriptionId = ids[0].replace('dropdown-label-', 'dropdown-description-');
+    if (control.getAttribute('aria-describedby') !== descriptionId) return false;
+    var label = doc.getElementById(ids[0])?.textContent;
+    var description = doc.getElementById(descriptionId)?.textContent;
+    if (!label || !description) return false;
+    var expected;
+    if (label === 'Permission preset' || label === exactDict['Permission preset'] ||
+        label === 'This computer' || label === exactDict['This computer']) expected = 'Controls the actions the agent can take.';
+    else if (label === 'Remote' || label === exactDict.Remote) expected = 'Controls permissions for remote conversations.';
+    return !!expected && (description.startsWith(expected) || (!!exactDict[expected] && description.startsWith(exactDict[expected])));
+  }
+
+  function isPermissionPresetLabel(el, preset) {
+    if (!el?.matches) return false;
+    if (el.matches('button[data-testid="permissions-selector-trigger"] > span')) return true;
+    if (el.matches('span.truncate') && (el.closest('[data-testid="permissions-preset-option-' + preset.toLowerCase() + '"]') &&
+        !el.closest('[data-testid="permissions-default-tag"]') ||
+        el.matches('[data-testid="permissions-use-global-settings"] span.text-muted-foreground'))) return true;
+    if (el.matches('button.agy-select-trigger > span.truncate[id^="dropdown-value-"]')) {
+      return isPermissionSettingsSelect(el.parentElement, el.id);
+    }
+    if (el.matches('select[aria-labelledby] > option[value]') && el.value === preset) {
+      return isPermissionSettingsSelect(el.parentElement);
+    }
+    // Settings popups live in a portal. The adjacent preset description identifies
+    // the option even after the runtime has translated that sibling.
+    if (el.classList.contains('truncate') && el.parentElement?.parentElement?.matches(permissionOptionSelector)) {
+      var subtitle = el.nextElementSibling;
+      var expected = permissionPresets[preset].description;
+      return subtitle?.matches('span.text-muted-foreground') &&
+        (subtitle.textContent === expected || subtitle.textContent === exactDict[expected]);
+    }
+    return false;
+  }
+
+  function translatePresetAccessibility(value, el) {
+    if (!el.matches('button[data-testid="permissions-selector-trigger"]')) return null;
+    var current = value.match(/^Agent permissions preset selector, current: (.+)$/);
+    if (current && Object.hasOwn(permissionPresets, current[1])) {
+      return '智能体权限预设选择器，当前：' + permissionPresets[current[1]].label;
+    }
+    var locked = value.match(/^Agent permissions preset: ([^,]+), ([\s\S]+)$/);
+    if (locked) {
+      var name = locked[1];
+      var label = Object.hasOwn(permissionPresets, name) ? permissionPresets[name].label :
+        (name === 'Default' || name === 'Request Review') ? exactDict[name] : null;
+      if (label) return '智能体权限预设：' + label + '，' +
+        (Object.hasOwn(exactDict, locked[2]) ? exactDict[locked[2]] : locked[2]);
+    }
+    return null;
+  }
+
+  function translateQueuedStatus(value, testId) {
+    var prefix = 'Waiting on ';
+    return testId === 'queued-messages-status' && value.startsWith(prefix) && value.length > prefix.length
+      ? '正在等待 ' + value.slice(prefix.length) : null;
+  }
+
+  function translateFeaturedAttribute(value, attr, el) {
+    var name = el.getAttribute('data-member-name');
+    if (name && el.getAttribute('data-testid') === 'featured-carousel-member-tile') {
+      if (attr === 'title') return value;
+      if (attr === 'aria-label') {
+        var status = value.startsWith(name + ', ') && translateSingleUnit(value.slice(name.length + 2));
+        return status ? name + '，' + status : value;
+      }
+    }
+    if (attr !== 'aria-label') return null;
+    var action = value.match(/^(Details for|Adding|Add) (.+)$/);
+    if (action && el.closest('[data-testid="featured-carousel"]')) {
+      var labels = { 'Details for': '查看详情：', Adding: '正在添加 ', Add: '添加 ' };
+      return labels[action[1]] + action[2];
+    }
+    return null;
+  }
+
   function translateUiText(text, el) {
     var testId = el && el.getAttribute('data-testid');
+    if (text === 'at' && el?.matches('span.text-muted-foreground.select-none') &&
+        el.closest('[data-testid="automation-schedule-editor"]')) return '于';
+    var queuedStatus = translateQueuedStatus(text, testId);
+    if (queuedStatus) return queuedStatus;
+    if ((text === 'Your plan' || text === 'Your plan:' || text.startsWith('Your plan: ')) &&
+        el?.classList.contains('font-medium') && el.closest('.settings-modal-container')) {
+      return text === 'Your plan' ? '当前方案' : '当前方案：' + text.slice('Your plan:'.length).trimStart();
+    }
     if (text.endsWith(' left') && el?.closest('[data-testid="inline-card-expiry"]')) {
       var remaining = text.match(/^(\d+)([ms]) left$/);
       if (remaining) return '剩余 ' + remaining[1] + (remaining[2] === 'm' ? ' 分钟' : ' 秒');
@@ -531,7 +648,7 @@
         clock[2] + ({mo: '个月', m: '分钟', h: '小时', d: '天', w: '周', y: '年'}[clock[3]]) + (clock[4] ? '前' : '');
       if (text === 'now' || text === 'just now') return '刚刚';
     }
-    return translateSingleUnit(text);
+    return translateMarketplaceCategory(text, el) ?? translateSingleUnit(text);
   }
 
   // Cache DOM facts only during one synchronous scan slice. Never retain a
@@ -585,7 +702,8 @@
         } else if (kind === 'side-question' && !isSideQuestionUi(control)) {
           preserveContent = true;
         } else if (kind === 'message' && !inToolbar && control.parentElement !== current &&
-            control.getAttribute('data-testid') !== 'plan-command-fyi-alert' && !isTimestampUi(control)) {
+            control.getAttribute('data-testid') !== 'plan-command-fyi-alert' && !isTimestampUi(control) &&
+            !isChangedFilesCardUi(control)) {
           // Unmarked legacy bodies can contain buttons. A nested button alone is not UI chrome.
           preserveContent = true;
         } else if (kind === 'tree' && (control.hasAttribute('data-uri') ||
@@ -618,8 +736,9 @@
     if (!officialPluginDescriptions || !el?.classList) return false;
     var searchHighlight = 'span.font-semibold.text-foreground';
     if (el.tagName === 'SPAN' && el.classList.contains('font-semibold') && el.matches(searchHighlight)) el = el.parentElement;
-    if (!el?.classList.contains('text-muted-foreground') ||
-        !el.matches('div.text-sm.text-muted-foreground.line-clamp-2.mt-1, div.text-sm.text-muted-foreground.truncate, p.text-muted-foreground.leading-relaxed')) return false;
+    if (!el?.classList.contains('text-muted-foreground')) return false;
+    var featured = el.matches('p.line-clamp-3[title]') && el.closest('[data-testid="featured-carousel"] [role="tabpanel"]');
+    if (!featured && !el.matches('div.text-sm.line-clamp-2.mt-1, div.text-sm.truncate, p.leading-relaxed')) return false;
 
     // Search can split a card's description into text and matching spans.
     // Read the full source and keep the nodes React owns in place.
@@ -632,7 +751,7 @@
       if (!text || text.nodeType !== 3 || (text !== child && text.nextSibling)) return false;
       var edit = textEdits.get(text);
       source += edit?.localized === text.nodeValue ? edit.source : text.nodeValue;
-      hasTranslation = hasTranslation || !!edit?.officialPluginDescription;
+      hasTranslation = hasTranslation || edit?.scope === 'official-plugin-description';
       if (!primary && text === child) primary = text;
       texts.push(text);
     }
@@ -641,21 +760,29 @@
       'agy-localization-check-official-plugin-description', {detail: source, cancelable: true}
     ))) {
       primary = primary || texts[0];
-      for (var i = 0; i < texts.length; i++) writeLocalizedText(texts[i], texts[i] === primary ? entry.translation : '', true);
+      for (var i = 0; i < texts.length; i++) {
+        writeLocalizedText(texts[i], texts[i] === primary ? entry.translation : '', 'official-plugin-description');
+      }
+      var title = el.getAttribute('title');
+      var edit = attributeEdits.get(el)?.title;
+      if (featured && (title === source || (title === edit?.localized && edit.source === source))) {
+        writeLocalizedAttribute(el, 'title', entry.translation, true);
+      } else restoreLocalizedAttributes(el);
       return true;
     }
     if (hasTranslation) {
       for (var j = 0; j < texts.length; j++) restoreLocalizedText(texts[j]);
+      restoreLocalizedAttributes(el);
     }
     return false;
   }
 
   // Retain the source of a DOM write while this runtime still owns the displayed value.
-  function writeLocalizedText(node, value, officialPluginDescription) {
+  function writeLocalizedText(node, value, scope) {
     if (node.nodeValue !== value) {
       var previous = textEdits.get(node);
       var source = previous && previous.localized === node.nodeValue ? previous.source : node.nodeValue;
-      textEdits.set(node, { source: source, localized: value, officialPluginDescription: officialPluginDescription });
+      textEdits.set(node, { source: source, localized: value, scope: scope });
       node.nodeValue = value;
     }
     node._agyOriginal = value;
@@ -680,6 +807,24 @@
     });
   }
 
+  function writeLocalizedAttribute(el, attr, value, officialPluginDescription) {
+    var current = el.getAttribute(attr);
+    if (current === value) return;
+    var edits = attributeEdits.get(el);
+    if (!edits) {
+      edits = Object.create(null);
+      attributeEdits.set(el, edits);
+    }
+    var previous = edits[attr];
+    edits[attr] = {
+      source: previous?.localized === current ? previous.source : current,
+      localized: value,
+      officialPluginDescription: officialPluginDescription
+    };
+    el.setAttribute(attr, value);
+    el[MARK_ATTR + '_' + attr] = value;
+  }
+
   function restoreProtectedSubtree(el) {
     restoreLocalizedAttributes(el);
     var walker = doc.createTreeWalker(el, root.NodeFilter.SHOW_ELEMENT | root.NodeFilter.SHOW_TEXT);
@@ -702,7 +847,8 @@
       if (mode !== 0 || !translateOfficialPluginDescription(parent)) restoreLocalizedText(node);
       return;
     }
-    if (officialPluginDescriptions && textEdits.get(node)?.officialPluginDescription) {
+    var edit = textEdits.get(node);
+    if (edit?.scope === 'official-plugin-description') {
       restoreLocalizedText(node);
       return;
     }
@@ -730,6 +876,20 @@
 
     var original = node.nodeValue;
     if (!original) return;
+
+    // These values can move between a permission picker and another select.
+    // Re-evaluate the renderer's source even if the visible value is cached.
+    var source = edit?.localized === original ? edit.source : original;
+    var disabledPreset = source.endsWith(adminDisabledSuffix);
+    var preset = disabledPreset ? source.slice(0, -adminDisabledSuffix.length) : source;
+    if (!mcpStatus && Object.hasOwn(permissionPresets, preset) && isPermissionPresetLabel(parent, preset)) {
+      writeLocalizedText(node, permissionPresets[preset].label + (disabledPreset ? '（管理员已禁用）' : ''), 'permission-preset');
+      return;
+    }
+    if (edit?.scope === 'permission-preset') {
+      restoreLocalizedText(node);
+      original = node.nodeValue;
+    }
 
     // 如果节点已标记原始文本且未变化，直接 O(1) 瞬时退出
     if (node._agyOriginal === original) return;
@@ -797,16 +957,15 @@
     if (scanId && el._agyScanId === scanId) return;
     var translationMode = getElementTranslationMode(el);
     if (translationMode === 0) {
-      if (translateOfficialPluginDescription(el)) {
-        restoreLocalizedAttributes(el);
-      } else if (work) {
+      if (translateOfficialPluginDescription(el)) return;
+      if (work) {
         restoreLocalizedAttributes(el);
         appendChildren(el, work);
       } else restoreProtectedSubtree(el);
       return;
     }
     var translateOwnContent = translationMode === 2;
-    if (!translateOwnContent) restoreLocalizedAttributes(el);
+    if (!translateOwnContent || attributeEdits.get(el)?.title?.officialPluginDescription) restoreLocalizedAttributes(el);
 
     // 同一轮扫描中，已处理的元素跳过
     if (scanId) el._agyScanId = scanId;
@@ -835,7 +994,9 @@
           var markKey = MARK_ATTR + '_' + attr;
           if (el[markKey] === val) continue;
 
-          var trans = translateSingleUnit(val);
+          var trans = (attr === 'aria-label' && val.startsWith('Agent permissions preset') ? translatePresetAccessibility(val, el) : null) ??
+            (attr === 'title' && val.startsWith('Waiting on ') ? translateQueuedStatus(val, el.getAttribute('data-testid')) : null) ??
+            translateMarketplaceCategory(val, el) ?? translateFeaturedAttribute(val, attr, el) ?? translateSingleUnit(val);
           if (attr === 'aria-label' && val.startsWith('Reset ') && val.endsWith(' to default') &&
               el.closest('[data-testid^="shortcut-row-"]')) {
             var shortcutAction = translateSingleUnit(val.slice('Reset '.length, -' to default'.length));
@@ -849,14 +1010,7 @@
             }
           }
           if (trans !== null && trans !== val) {
-            var edits = attributeEdits.get(el);
-            if (!edits) {
-              edits = Object.create(null);
-              attributeEdits.set(el, edits);
-            }
-            edits[attr] = { source: val, localized: trans };
-            el.setAttribute(attr, trans);
-            el[markKey] = trans; // 标记已翻译的值
+            writeLocalizedAttribute(el, attr, trans);
           } else {
             // 关键性能优化：补充 DOM 否定标记，未命中时记录原属性值，二次扫描直接 O(1) 退出
             el[markKey] = val;
@@ -1054,6 +1208,42 @@
     }
   }
 
+  function enqueuePermissionPresetDependents(el) {
+    if (el?.tagName !== 'SPAN' && el?.tagName !== 'DIV') return;
+    var optionBody = el.tagName === 'SPAN' && el.classList.contains('text-muted-foreground') ? el.parentElement : el;
+    var optionLabel = optionBody?.firstElementChild;
+    var option = optionBody?.parentElement;
+    if (optionLabel?.classList.contains('truncate') && option?.classList.contains('agy-overlay-item') &&
+        option.matches(permissionOptionSelector)) {
+      enqueueNode(optionLabel);
+    }
+
+    // Settings labels and descriptions share a column next to the select.
+    var column;
+    var field = el;
+    for (var depth = 0; field && depth < 3; field = field.parentElement, depth++) {
+      if (field.tagName !== 'SPAN') continue;
+      if (field.id.startsWith('dropdown-label-')) {
+        column = field.parentElement?.parentElement;
+        break;
+      }
+      if (field.id.startsWith('dropdown-description-')) {
+        column = field.parentElement;
+        break;
+      }
+    }
+    if (!column && el.classList.contains('flex-1')) {
+      field = el.querySelector(':scope > div > span[id^="dropdown-label-"]');
+      if (field) column = el;
+    }
+    if (column?.classList.contains('flex-1')) {
+      var labelId = field.id.replace(/^dropdown-description-/, 'dropdown-label-');
+      column.nextElementSibling?.querySelectorAll('button.agy-select-trigger[aria-labelledby], select[aria-labelledby]').forEach(function (select) {
+        if (select.getAttribute('aria-labelledby').split(' ')[0] === labelId) enqueueNode(select);
+      });
+    }
+  }
+
   function recordMutations(mutations) {
     // A SPA route can reuse an unchanged breadcrumb node with a different role.
     if (doc.location.pathname !== observedDocumentPath) {
@@ -1064,6 +1254,7 @@
     for (var i = 0; i < mutations.length; i++) {
       var mutation = mutations[i];
       if (mutation.type === 'childList') {
+        enqueuePermissionPresetDependents(mutation.target);
         var added = mutation.addedNodes;
         for (var j = 0; j < added.length; j++) {
           var child = added[j];
@@ -1073,6 +1264,7 @@
           enqueueNode(child);
         }
       } else if (mutation.type === 'characterData') {
+        enqueuePermissionPresetDependents(mutation.target.parentElement);
         // Writes made while observing belong to the renderer, even when the value is unchanged.
         textEdits.delete(mutation.target);
         mutation.target._agyOriginal = undefined;
