@@ -1,7 +1,9 @@
 {
   "version": "3.3.59",
-  "buildTime": "2026-11-21T09:58:32.681Z",
+  "buildTime": "2026-11-24T10:23:10.325Z",
   "exact": {
+    "Leaving Soon": "即将下线",
+    "The original Gemini 4 model for advanced workflows. Leaving on Nov 30.": "适用于高级工作流程的初代 Gemini 4 模型，将于 11 月 30 日下线。",
     "Gemini 4 Carbon is currently available to Ultra plan subscribers.": "Gemini 4 Carbon 目前面向 Ultra 套餐订阅用户开放。",
     "For speed and efficiency in execution tasks": "适合需要快速、高效执行的任务",
     "Offloads routine steps to a faster executor. Same quality, fewer tokens used.": "将常规步骤交给更快的执行模型处理，保持相同质量，同时减少 Token 消耗。",
